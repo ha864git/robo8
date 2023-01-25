@@ -1,12 +1,39 @@
 function check_command () {
     if (cmd_request == "forward") {
+        repeat = 1
+        done = 0
         list_pointer = 0
+        list = [
+        "70,160,110,160,70,20,40,60,5",
+        "70,160,110,160,70,20,110,60,30",
+        "70,160,110,160,70,20,110,20,30",
+        "70,160,110,160,40,70,110,20,30",
+        "70,160,110,160,110,70,110,20,30",
+        "110,160,140,120,110,20,70,20,5",
+        "110,160,70,120,110,20,70,20,30",
+        "110,160,70,160,110,20,70,20,30",
+        "140,110,70,160,110,20,70,20,30",
+        "70,110,70,160,110,20,70,20,30"
+        ]
         playing_mode = "forward"
-        list = ["130,130,100,120,70,60,30,30,5", "110,120,150,150,50,50,80,60,5"]
     } else if (cmd_request == "stop") {
+        repeat = 0
+        done = 0
         list_pointer = 0
-        playing_mode = "stop"
         list = ["110,120,120,120,70,60,60,60,5"]
+        playing_mode = "stop"
+    } else if (cmd_request == "down") {
+        repeat = 0
+        done = 0
+        list_pointer = 0
+        list = ["110,120,160,40,70,60,20,140,5", "160,40,160,40,20,140,20,140,5"]
+        playing_mode = "down"
+    } else if (cmd_request == "home") {
+        repeat = 0
+        done = 0
+        list_pointer = 0
+        list = ["90,90,90,90,90,90,90,90,5"]
+        playing_mode = "home"
     }
 }
 function get_angle (current: number, target: number, pitch_angle_get: number) {
@@ -32,21 +59,19 @@ bluetooth.onBluetoothConnected(function () {
 bluetooth.onBluetoothDisconnected(function () {
     basic.showIcon(IconNames.Sad)
 })
-input.onButtonPressed(Button.A, function () {
-    step_mode = 0
-})
 function Execute_a_command () {
     if (list_pointer >= list.length) {
         list_pointer = 0
-        if (playing_mode == "stop") {
-            playing_mode = "stoped"
-        } else if (playing_mode != cmd_request) {
+        done = 1
+        if (playing_mode != cmd_request) {
+            repeat = 0
+            done = 0
             playing_mode = "stop"
             list = ["110,120,120,120,70,60,60,60,5"]
         }
     }
-    if (playing_mode != "stoped") {
-        if (list.length > 0) {
+    if (list.length > 0) {
+        if (done == 0 || repeat == 1) {
             list_para = list[list_pointer].split(",")
             if (0 == set_angle(list_para[0], list_para[2], list_para[4], list_para[6], list_para[1], list_para[3], list_para[5], list_para[7], parseFloat(list_para[8]))) {
                 if (step == 0) {
@@ -59,13 +84,6 @@ function Execute_a_command () {
         }
     }
 }
-input.onButtonPressed(Button.AB, function () {
-    step_mode = 1
-    step = 1
-})
-input.onButtonPressed(Button.B, function () {
-    step = 0
-})
 control.onEvent(EventBusSource.MES_DPAD_CONTROLLER_ID, EventBusValue.MICROBIT_EVT_ANY, function () {
     if (lastvalue != control.eventValue()) {
         if (control.eventValue() == 1) {
@@ -73,15 +91,17 @@ control.onEvent(EventBusSource.MES_DPAD_CONTROLLER_ID, EventBusValue.MICROBIT_EV
         } else if (control.eventValue() == 3) {
             cmd_request = "stop"
         } else if (control.eventValue() == 5) {
-            if (step_mode == 0) {
-                step_mode = 1
-                step = 1
-            } else {
-                step_mode = 0
-                step = 0
-            }
-        } else if (control.eventValue() == 7) {
+            cmd_request = "down"
+        } else if (control.eventValue() == 9) {
+            step_mode = 1
+            step = 1
+        } else if (control.eventValue() == 11) {
+            step_mode = 0
             step = 0
+        } else if (control.eventValue() == 15) {
+            step = 0
+        } else if (control.eventValue() == 7) {
+            cmd_request = "home"
         } else {
         	
         }
@@ -121,7 +141,6 @@ let ans_set_angle = 0
 let ans_get_angle = 0
 let playing_mode = ""
 let list_pointer = 0
-let cmd_request = ""
 let list: string[] = []
 let back_right_foot_init = 0
 let front_right_foot_init = 0
@@ -134,26 +153,34 @@ let front_left_angle_init = 0
 let lastvalue = 0
 let step = 0
 let step_mode = 0
+let done = 0
+let repeat = 0
+let cmd_request = ""
+let list_counter = 0
+cmd_request = "stop"
+repeat = 0
+done = 0
 step_mode = 0
 step = 0
 lastvalue = 0
-let list_counter = 0
 led.setBrightness(10)
 basic.showIcon(IconNames.Heart)
 bluetooth.startLEDService()
-front_left_angle_init = 96
-back_left_angle_init = 87
-front_right_angle_init = 96
-back_right_angle_init = 85
+front_left_angle_init = 89
+back_left_angle_init = 95
+front_right_angle_init = 83
+back_right_angle_init = 80
 front_left_foot_init = 89
-back_left_foot_init = 94
-front_right_foot_init = 94
-back_right_foot_init = 96
+back_left_foot_init = 89
+front_right_foot_init = 100
+back_right_foot_init = 85
 set_angle("110", "120", "70", "60", "120", "120", "60", "60", 0)
 list = []
 loops.everyInterval(50, function () {
-    if (playing_mode == "stoped") {
-        check_command()
+    if (repeat == 0 && done == 1) {
+        if (cmd_request != playing_mode) {
+            check_command()
+        }
     } else {
         Execute_a_command()
     }
